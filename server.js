@@ -3,10 +3,28 @@ const bodyParser = require('body-parser');
 const moment = require('moment');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080; // OpenShift often uses 8080 as the default port
+const IP = process.env.IP || '0.0.0.0'; // Bind to all available network interfaces
 
 // Middleware
 app.use(bodyParser.json());
+
+// Enable CORS for all routes
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+// Log all incoming requests for debugging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
 
 // In-memory data store
 const items = [];
@@ -117,6 +135,19 @@ app.get('/', (req, res) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+app.listen(PORT, IP, () => {
+  console.log(`Server is running on ${IP}:${PORT}`);
+  console.log('Environment variables:', {
+    NODE_ENV: process.env.NODE_ENV,
+    PORT: process.env.PORT,
+    IP: process.env.IP
+  });
+  console.log('Available routes:');
+  console.log(' - GET    /');
+  console.log(' - GET    /health');
+  console.log(' - GET    /api/items');
+  console.log(' - GET    /api/items/:id');
+  console.log(' - POST   /api/items');
+  console.log(' - PUT    /api/items/:id');
+  console.log(' - DELETE /api/items/:id');
 });
